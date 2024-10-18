@@ -2,6 +2,9 @@
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
 import { StripeNotificationsStack } from '../lib/stripe-notifications-stack';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
 
 const app = new cdk.App();
 const environment = app.node.tryGetContext('environment') || 'dev';
