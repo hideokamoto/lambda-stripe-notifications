@@ -24,8 +24,16 @@
       "./node_modules/@types"
     ]
   },
+  "include": [
+    "lib/**/*"
+  ],
   "exclude": [
     "node_modules",
-    "cdk.out"
+    "cdk.out",
+    "examples",
+    "test",
+    "lambda",
+    "**/*.test.ts",
+    "**/*.spec.ts"
   ]
 }
