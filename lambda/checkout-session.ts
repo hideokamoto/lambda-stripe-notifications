@@ -215,12 +215,15 @@ export const handler: EventBridgeHandler<EventDetailType, EventDetail, void> = a
                     '',
                     '*Order detail*',
                     lineItems.map(item => {
-                        const product = item.price?.product as Stripe.Product;
+                        const product = item.price?.product;
+                        const productName = (product && typeof product !== 'string' && !('deleted' in product && product.deleted))
+                            ? product.name
+                            : 'Unknown Product';
                         return [
                             `- Amount total: ${item.amount_total}`,
                             `- Amount subtotal: ${item.amount_subtotal}`,
                             `- Description: ${item.description}`,
-                            `- Product name: ${product.name}`,
+                            `- Product name: ${productName}`,
                             `- Quantity: ${item.quantity}`
                         ].join('\n');
                     }).join('\n')

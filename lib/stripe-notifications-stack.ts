@@ -135,12 +135,13 @@ export class StripeNotificationConstruct extends Construct {
     }
 
     this.lambdaFunction = new aws_lambda_nodejs.NodejsFunction(this, 'Handler', {
-      entry: join(__dirname, '../lambda/checkout-session.ts'),
-      handler: 'handler',
       runtime: cdk.aws_lambda.Runtime.NODEJS_20_X,
       timeout: cdk.Duration.seconds(30),
-      environment,
       ...props.lambdaOptions,
+      // 重要なプロパティは上書きされないように最後に配置
+      entry: join(__dirname, '../lambda/checkout-session.ts'),
+      handler: 'handler',
+      environment,
     });
 
     // SNS権限を追加

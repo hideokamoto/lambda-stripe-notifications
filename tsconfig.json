@@ -25,14 +25,14 @@
     ]
   },
   "include": [
-    "lib/**/*"
+    "lib/**/*",
+    "lambda/**/*"
   ],
   "exclude": [
     "node_modules",
     "cdk.out",
     "examples",
     "test",
-    "lambda",
     "**/*.test.ts",
     "**/*.spec.ts"
   ]

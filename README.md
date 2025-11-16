@@ -96,10 +96,16 @@ new StripeNotificationConstruct(stack, 'StripeNotification', {
 ### Lambda関数のカスタマイズ
 
 ```typescript
+import * as cdk from 'aws-cdk-lib';
+import * as logs from 'aws-cdk-lib/aws-logs';
+import { StripeNotificationConstruct } from '@your-org/stripe-notifications-construct';
+
 new StripeNotificationConstruct(stack, 'StripeNotification', {
   environment: 'production',
   snsTopicArn: 'arn:aws:sns:us-west-2:123456789:my-slack-topic',
-  stripeSecretKey: process.env.STRIPE_SECRET_KEY!,
+  stripeSecretKeyFromSecretsManager: {
+    secretArn: 'arn:aws:secretsmanager:us-west-2:123456789:secret:stripe/secret-key-abc123',
+  },
   stripeAccountName: 'MyCompany',
   lambdaOptions: {
     timeout: cdk.Duration.seconds(60),
