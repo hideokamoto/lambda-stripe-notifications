@@ -29,7 +29,9 @@ yarn add @your-org/stripe-notifications-construct
 
 ## 使用方法
 
-### 基本的な使い方
+### 🔒 推奨: AWS Secrets Managerを使用する方法
+
+セキュリティのベストプラクティスとして、Secrets Managerの使用を推奨します：
 
 ```typescript
 import * as cdk from 'aws-cdk-lib';
@@ -41,20 +43,53 @@ const stack = new cdk.Stack(app, 'MyStack');
 new StripeNotificationConstruct(stack, 'StripeNotification', {
   environment: 'production',
   snsTopicArn: 'arn:aws:sns:us-west-2:123456789:my-slack-topic',
-  stripeSecretKey: process.env.STRIPE_SECRET_KEY!,
+  stripeSecretKeyFromSecretsManager: {
+    secretArn: 'arn:aws:secretsmanager:us-west-2:123456789:secret:stripe/secret-key-abc123',
+  },
   stripeAccountName: 'MyCompany',
 });
 ```
 
-### 開発環境での使用例
+JSONシークレットから特定のキーを取得する場合：
 
 ```typescript
-new StripeNotificationConstruct(stack, 'StripeNotificationDev', {
+new StripeNotificationConstruct(stack, 'StripeNotification', {
+  environment: 'production',
+  snsTopicArn: 'arn:aws:sns:us-west-2:123456789:my-slack-topic',
+  stripeSecretKeyFromSecretsManager: {
+    secretArn: 'arn:aws:secretsmanager:us-west-2:123456789:secret:app-secrets-abc123',
+    secretKey: 'STRIPE_SECRET_KEY', // JSON内のキー名
+  },
+  stripeAccountName: 'MyCompany',
+});
+```
+
+### 🔒 推奨: SSM Parameter Storeを使用する方法
+
+コスト効率を重視する場合は、SSM Parameter Store（SecureString）を使用できます：
+
+```typescript
+new StripeNotificationConstruct(stack, 'StripeNotification', {
+  environment: 'production',
+  snsTopicArn: 'arn:aws:sns:us-west-2:123456789:my-slack-topic',
+  stripeSecretKeyFromSsmParameter: {
+    parameterName: '/stripe/secret-key',
+  },
+  stripeAccountName: 'MyCompany',
+});
+```
+
+### ⚠️ 非推奨: 環境変数から直接指定する方法
+
+> **警告**: セキュリティ上のリスクがあるため、本番環境では使用しないでください。
+> テスト目的やローカル開発でのみ使用してください。
+
+```typescript
+new StripeNotificationConstruct(stack, 'StripeNotification', {
   environment: 'development',
-  snsTopicArn: process.env.SNS_TOPIC_ARN!,
-  stripeSecretKey: process.env.STRIPE_TEST_SECRET_KEY!,
-  stripeAccountName: 'MyCompany (Test)',
-  stripeSandboxAccountId: process.env.STRIPE_SANDBOX_ACCOUNT_ID,
+  snsTopicArn: 'arn:aws:sns:us-west-2:123456789:my-slack-topic',
+  stripeSecretKey: process.env.STRIPE_SECRET_KEY!, // 非推奨
+  stripeAccountName: 'MyCompany (Dev)',
 });
 ```
 
@@ -117,9 +152,7 @@ export STRIPE_ACCOUNT_NAME="MyCompany (Test)"
 export STRIPE_SANDBOX_ACCOUNT_ID="acct_xxxxxxxxxxxxx"
 ```
 
-### 4. 鍵の管理について
-
-#### Stripe Secret Key の取得方法
+### 4. Stripe Secret Keyの取得
 
 1. [Stripe Dashboard](https://dashboard.stripe.com) にログイン
 2. **Developers** > **API keys** を選択
@@ -127,33 +160,120 @@ export STRIPE_SANDBOX_ACCOUNT_ID="acct_xxxxxxxxxxxxx"
    - テスト環境: `sk_test_` で始まるキー
    - 本番環境: `sk_live_` で始まるキー
 
-**⚠️ セキュリティ上の注意事項:**
+### 5. Stripe Secret Keyの安全な管理
+
+#### ⚠️ セキュリティ上の重要な注意事項
 
 - **Secret Keyは絶対にGitにコミットしないでください**
-- 環境変数やAWS Secrets Managerで管理してください
+- **本番環境では必ずSecrets ManagerまたはSSM Parameter Storeを使用してください**
 - `.env`ファイルは`.gitignore`に追加してください
-- 本番環境では必ずAWS Secrets Managerの使用を推奨します
+- 環境変数への直接設定は開発環境のみに限定してください
 
-#### AWS Secrets Managerを使用した例
+#### 方法1: AWS Secrets Managerを使用（推奨）
+
+**メリット:**
+- 自動ローテーション機能
+- 詳細な監査ログ
+- きめ細かいアクセス制御
+- クロスリージョンレプリケーション
+
+**セットアップ手順:**
+
+1. AWS CLIでシークレットを作成:
+
+```bash
+# 文字列として保存する場合
+aws secretsmanager create-secret \
+  --name stripe/secret-key \
+  --secret-string "sk_live_xxxxxxxxxxxxx" \
+  --region us-west-2
+
+# JSONとして保存する場合（複数の値を管理）
+aws secretsmanager create-secret \
+  --name app/secrets \
+  --secret-string '{"STRIPE_SECRET_KEY":"sk_live_xxxxxxxxxxxxx","OTHER_KEY":"value"}' \
+  --region us-west-2
+```
+
+2. CDKコードで参照:
 
 ```typescript
-import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import { StripeNotificationConstruct } from '@your-org/stripe-notifications-construct';
 
-const stripeSecretKey = secretsmanager.Secret.fromSecretNameV2(
-  stack,
-  'StripeSecret',
-  'stripe/secret-key'
-);
-
+// 文字列シークレットの場合
 new StripeNotificationConstruct(stack, 'StripeNotification', {
   environment: 'production',
   snsTopicArn: 'arn:aws:sns:us-west-2:123456789:my-slack-topic',
-  stripeSecretKey: stripeSecretKey.secretValue.unsafeUnwrap(),
+  stripeSecretKeyFromSecretsManager: {
+    secretArn: 'arn:aws:secretsmanager:us-west-2:123456789:secret:stripe/secret-key-abc123',
+  },
+  stripeAccountName: 'MyCompany',
+});
+
+// JSONシークレットの場合
+new StripeNotificationConstruct(stack, 'StripeNotification', {
+  environment: 'production',
+  snsTopicArn: 'arn:aws:sns:us-west-2:123456789:my-slack-topic',
+  stripeSecretKeyFromSecretsManager: {
+    secretArn: 'arn:aws:secretsmanager:us-west-2:123456789:secret:app/secrets-abc123',
+    secretKey: 'STRIPE_SECRET_KEY', // JSON内のキー
+  },
   stripeAccountName: 'MyCompany',
 });
 ```
 
-### 5. EventBridgeルールの設定
+**料金:** $0.40/月 + API呼び出し $0.05/10,000回
+
+#### 方法2: SSM Parameter Store (SecureString) を使用
+
+**メリット:**
+- 低コスト（無料枠あり）
+- シンプルな構成
+- KMSによる暗号化
+
+**セットアップ手順:**
+
+1. AWS CLIでパラメータを作成:
+
+```bash
+aws ssm put-parameter \
+  --name "/stripe/secret-key" \
+  --value "sk_live_xxxxxxxxxxxxx" \
+  --type SecureString \
+  --region us-west-2
+```
+
+2. CDKコードで参照:
+
+```typescript
+new StripeNotificationConstruct(stack, 'StripeNotification', {
+  environment: 'production',
+  snsTopicArn: 'arn:aws:sns:us-west-2:123456789:my-slack-topic',
+  stripeSecretKeyFromSsmParameter: {
+    parameterName: '/stripe/secret-key',
+  },
+  stripeAccountName: 'MyCompany',
+});
+```
+
+**料金:** 無料（標準パラメータ、10,000個まで）
+
+#### 方法3: 環境変数（開発環境のみ）
+
+**⚠️ 本番環境では使用しないでください**
+
+開発環境やテスト環境でのみ使用してください：
+
+```typescript
+new StripeNotificationConstruct(stack, 'StripeNotification', {
+  environment: 'development',
+  snsTopicArn: 'arn:aws:sns:us-west-2:123456789:my-slack-topic',
+  stripeSecretKey: process.env.STRIPE_SECRET_KEY!,
+  stripeAccountName: 'MyCompany (Dev)',
+});
+```
+
+### 6. EventBridgeルールの設定
 
 このConstructで作成されたLambda関数をEventBridgeルールのターゲットに設定します：
 
@@ -186,10 +306,27 @@ rule.addTarget(new targets.LambdaFunction(construct.lambdaFunction));
 |-----------|-----|------|------|
 | `environment` | `string` | ✅ | デプロイ環境 (例: `development`, `production`) |
 | `snsTopicArn` | `string` | ✅ | Slack通知を送信するSNS TopicのARN |
-| `stripeSecretKey` | `string` | ✅ | StripeのSecret Key (本番用またはテスト用) |
+| `stripeSecretKey` | `string` | ⚠️ | **非推奨** StripeのSecret Key (本番環境では使用しないでください) |
+| `stripeSecretKeyFromSecretsManager` | `StripeSecretFromSecretsManager` | 🔒 | **推奨** AWS Secrets ManagerからStripe Secret Keyを取得する設定 |
+| `stripeSecretKeyFromSsmParameter` | `StripeSecretFromSsmParameter` | 🔒 | **推奨** SSM Parameter StoreからStripe Secret Keyを取得する設定 |
 | `stripeAccountName` | `string` | ✅ | Stripeアカウント名（通知メッセージに表示） |
 | `stripeSandboxAccountId` | `string` | ❌ | StripeサンドボックスアカウントID（テスト環境の場合） |
 | `lambdaOptions` | `Partial<NodejsFunctionProps>` | ❌ | Lambda関数の追加設定 |
+
+**注意:** `stripeSecretKey`、`stripeSecretKeyFromSecretsManager`、`stripeSecretKeyFromSsmParameter`のいずれか1つを必ず指定してください。
+
+### StripeSecretFromSecretsManager
+
+| プロパティ | 型 | 必須 | 説明 |
+|-----------|-----|------|------|
+| `secretArn` | `string` | ✅ | Secrets ManagerのシークレットARNまたは名前 |
+| `secretKey` | `string` | ❌ | シークレット内のJSONキー（JSONシークレットの場合） |
+
+### StripeSecretFromSsmParameter
+
+| プロパティ | 型 | 必須 | 説明 |
+|-----------|-----|------|------|
+| `parameterName` | `string` | ✅ | SSM Parameter Storeのパラメータ名 |
 
 ## 通知内容
 

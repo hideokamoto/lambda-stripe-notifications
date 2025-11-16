@@ -127,4 +127,139 @@ describe('StripeNotificationConstruct', () => {
       MemorySize: 512,
     });
   });
+
+  test('Secrets Managerを使用する場合、正しい環境変数とIAM権限が設定されること', () => {
+    // WHEN
+    const secretArn = 'arn:aws:secretsmanager:us-west-2:123456789:secret:stripe-secret-abc123';
+    new StripeNotificationConstruct(stack, 'TestConstruct', {
+      environment: 'production',
+      snsTopicArn: 'arn:aws:sns:us-west-2:123456789:test-topic',
+      stripeSecretKeyFromSecretsManager: {
+        secretArn,
+      },
+      stripeAccountName: 'TestAccount',
+    });
+
+    // THEN
+    const template = Template.fromStack(stack);
+
+    // 環境変数の確認
+    template.hasResourceProperties('AWS::Lambda::Function', {
+      Environment: {
+        Variables: {
+          STRIPE_SECRET_SOURCE: 'secretsmanager',
+          STRIPE_SECRET_ARN: secretArn,
+        },
+      },
+    });
+
+    // IAM権限の確認
+    template.hasResourceProperties('AWS::IAM::Policy', {
+      PolicyDocument: {
+        Statement: [
+          {
+            Action: 'sns:Publish',
+          },
+          {
+            Action: 'secretsmanager:GetSecretValue',
+            Effect: 'Allow',
+            Resource: secretArn,
+          },
+        ],
+      },
+    });
+  });
+
+  test('Secrets Manager (JSONキー指定)を使用する場合、正しい環境変数が設定されること', () => {
+    // WHEN
+    const secretArn = 'arn:aws:secretsmanager:us-west-2:123456789:secret:stripe-secret-abc123';
+    new StripeNotificationConstruct(stack, 'TestConstruct', {
+      environment: 'production',
+      snsTopicArn: 'arn:aws:sns:us-west-2:123456789:test-topic',
+      stripeSecretKeyFromSecretsManager: {
+        secretArn,
+        secretKey: 'STRIPE_SECRET_KEY',
+      },
+      stripeAccountName: 'TestAccount',
+    });
+
+    // THEN
+    const template = Template.fromStack(stack);
+    template.hasResourceProperties('AWS::Lambda::Function', {
+      Environment: {
+        Variables: {
+          STRIPE_SECRET_SOURCE: 'secretsmanager',
+          STRIPE_SECRET_ARN: secretArn,
+          STRIPE_SECRET_JSON_KEY: 'STRIPE_SECRET_KEY',
+        },
+      },
+    });
+  });
+
+  test('SSM Parameter Storeを使用する場合、正しい環境変数とIAM権限が設定されること', () => {
+    // WHEN
+    const parameterName = '/stripe/secret-key';
+    new StripeNotificationConstruct(stack, 'TestConstruct', {
+      environment: 'production',
+      snsTopicArn: 'arn:aws:sns:us-west-2:123456789:test-topic',
+      stripeSecretKeyFromSsmParameter: {
+        parameterName,
+      },
+      stripeAccountName: 'TestAccount',
+    });
+
+    // THEN
+    const template = Template.fromStack(stack);
+
+    // 環境変数の確認
+    template.hasResourceProperties('AWS::Lambda::Function', {
+      Environment: {
+        Variables: {
+          STRIPE_SECRET_SOURCE: 'ssm',
+          STRIPE_SECRET_PARAMETER_NAME: parameterName,
+        },
+      },
+    });
+
+    // IAM権限の確認
+    template.hasResourceProperties('AWS::IAM::Policy', {
+      PolicyDocument: {
+        Statement: [
+          {
+            Action: 'sns:Publish',
+          },
+          {
+            Action: 'ssm:GetParameter',
+            Effect: 'Allow',
+          },
+        ],
+      },
+    });
+  });
+
+  test('シークレットキーが指定されていない場合、エラーをスローすること', () => {
+    // WHEN & THEN
+    expect(() => {
+      new StripeNotificationConstruct(stack, 'TestConstruct', {
+        environment: 'production',
+        snsTopicArn: 'arn:aws:sns:us-west-2:123456789:test-topic',
+        stripeAccountName: 'TestAccount',
+      } as any);
+    }).toThrow(/いずれか1つを指定してください/);
+  });
+
+  test('複数のシークレットキー設定が指定された場合、エラーをスローすること', () => {
+    // WHEN & THEN
+    expect(() => {
+      new StripeNotificationConstruct(stack, 'TestConstruct', {
+        environment: 'production',
+        snsTopicArn: 'arn:aws:sns:us-west-2:123456789:test-topic',
+        stripeSecretKey: 'sk_test_123',
+        stripeSecretKeyFromSecretsManager: {
+          secretArn: 'arn:aws:secretsmanager:us-west-2:123456789:secret:stripe-secret-abc123',
+        },
+        stripeAccountName: 'TestAccount',
+      });
+    }).toThrow(/同時に指定できません/);
+  });
 });
