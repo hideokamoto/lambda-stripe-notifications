@@ -369,6 +369,40 @@ npm run watch
 
 詳細なサンプルコードは[examples](./examples)ディレクトリを参照してください。
 
+## npm公開前のチェックリスト
+
+このライブラリをnpmに公開する前に、以下の項目を更新してください：
+
+### 必須項目
+
+- [ ] **package.json**
+  - `"name"`: `"@your-org/stripe-notifications-construct"` → 実際の組織名/パッケージ名に変更
+  - `"author"`: `"Your Name"` → 実際の作成者名に変更
+  - `"repository.url"`: GitHubリポジトリURLを実際のURLに変更
+
+- [ ] **README.md**
+  - インストールコマンドの`@your-org/stripe-notifications-construct`を実際のパッケージ名に変更
+  - すべてのコード例で使用している`@your-org/stripe-notifications-construct`を実際のパッケージ名に変更
+  - GitHubリポジトリURL（`https://github.com/your-org/lambda-stripe-notifications`）を実際のURLに変更
+
+### 公開手順
+
+1. 上記のプレースホルダーをすべて更新
+2. ビルドとテストが成功することを確認
+   ```bash
+   npm run build
+   npm test
+   ```
+3. パッケージの内容を確認
+   ```bash
+   npm pack --dry-run
+   ```
+   Lambda関数（`lambda/checkout-session.js`と`lambda/checkout-session.d.ts`）が含まれていることを確認
+4. npmに公開
+   ```bash
+   npm publish --access public
+   ```
+
 ## ライセンス
 
 MIT
