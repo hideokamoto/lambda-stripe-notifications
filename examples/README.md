@@ -64,7 +64,7 @@ npm run deploy:prod
 import * as cdk from 'aws-cdk-lib';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
-import { StripeCheckoutHandler } from 'stripe-slack-notification';
+import { StripeCheckoutHandler } from 'cdk-stripe-slack-notification';
 
 const app = new cdk.App();
 const stack = new cdk.Stack(app, 'StripeStack');
@@ -102,7 +102,7 @@ app.synth();
 
 ```typescript
 import * as cdk from 'aws-cdk-lib';
-import { StripeCheckoutHandler } from 'stripe-slack-notification';
+import { StripeCheckoutHandler } from 'cdk-stripe-slack-notification';
 
 const app = new cdk.App();
 
@@ -147,7 +147,7 @@ app.synth();
 ```typescript
 import * as cdk from 'aws-cdk-lib';
 import * as logs from 'aws-cdk-lib/aws-logs';
-import { StripeCheckoutHandler } from 'stripe-slack-notification';
+import { StripeCheckoutHandler } from 'cdk-stripe-slack-notification';
 
 const app = new cdk.App();
 const stack = new cdk.Stack(app, 'StripeStack');

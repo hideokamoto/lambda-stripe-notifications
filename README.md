@@ -18,13 +18,13 @@ Stripe決済通知をSlackに送信するためのAWS CDK Constructライブラ�
 ## インストール
 
 ```bash
-npm install stripe-slack-notification
+npm install cdk-stripe-slack-notification
 ```
 
 または
 
 ```bash
-yarn add stripe-slack-notification
+yarn add cdk-stripe-slack-notification
 ```
 
 ## 使用方法
@@ -35,7 +35,7 @@ yarn add stripe-slack-notification
 
 ```typescript
 import * as cdk from 'aws-cdk-lib';
-import { StripeCheckoutHandler } from 'stripe-slack-notification';
+import { StripeCheckoutHandler } from 'cdk-stripe-slack-notification';
 
 const app = new cdk.App();
 const stack = new cdk.Stack(app, 'MyStack');
@@ -98,7 +98,7 @@ new StripeCheckoutHandler(stack, 'StripeNotification', {
 ```typescript
 import * as cdk from 'aws-cdk-lib';
 import * as logs from 'aws-cdk-lib/aws-logs';
-import { StripeCheckoutHandler } from 'stripe-slack-notification';
+import { StripeCheckoutHandler } from 'cdk-stripe-slack-notification';
 
 new StripeCheckoutHandler(stack, 'StripeNotification', {
   environment: 'production',
@@ -204,7 +204,7 @@ aws secretsmanager create-secret \
 2. CDKコードで参照:
 
 ```typescript
-import { StripeCheckoutHandler } from 'stripe-slack-notification';
+import { StripeCheckoutHandler } from 'cdk-stripe-slack-notification';
 
 // 文字列シークレットの場合
 new StripeCheckoutHandler(stack, 'StripeNotification', {
@@ -376,13 +376,13 @@ npm run watch
 ### 必須項目
 
 - [ ] **package.json**
-  - `"name"`: `"stripe-slack-notification"` → 実際の組織名/パッケージ名に変更（必要に応じて）
+  - `"name"`: `"cdk-stripe-slack-notification"` → 実際の組織名/パッケージ名に変更（必要に応じて）
   - `"author"`: `"Your Name"` → 実際の作成者名に変更
   - `"repository.url"`: GitHubリポジトリURLを実際のURLに変更
 
 - [ ] **README.md**
-  - インストールコマンドの`stripe-slack-notification`を確認（必要に応じて変更）
-  - すべてのコード例で使用している`stripe-slack-notification`を確認（必要に応じて変更）
+  - インストールコマンドの`cdk-stripe-slack-notification`を確認（必要に応じて変更）
+  - すべてのコード例で使用している`cdk-stripe-slack-notification`を確認（必要に応じて変更）
   - GitHubリポジトリURL（`https://github.com/hideokamoto/lambda-stripe-notifications`）を実際のURLに変更
 
 ### 公開手順
