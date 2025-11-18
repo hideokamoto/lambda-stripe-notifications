@@ -245,7 +245,7 @@ describe("StripeCheckoutHandler", () => {
         snsTopicArn: "arn:aws:sns:us-west-2:123456789:test-topic",
         stripeAccountName: "TestAccount",
       } as any);
-    }).toThrow(/いずれか1つを指定してください/);
+    }).toThrow(/Please specify one of stripeSecretKey/);
   });
 
   test("複数のシークレットキー設定が指定された場合、エラーをスローすること", () => {
@@ -260,6 +260,6 @@ describe("StripeCheckoutHandler", () => {
         },
         stripeAccountName: "TestAccount",
       });
-    }).toThrow(/同時に指定できません/);
+    }).toThrow(/Cannot specify stripeSecretKey/);
   });
 });
