@@ -4,4 +4,4 @@ export {
   StripeSecretFromSecretsManager,
   StripeSecretFromSsmParameter,
   StripeNotificationsStack,
-} from './stripe-notifications-stack';
+} from "./stripe-notifications-stack";
