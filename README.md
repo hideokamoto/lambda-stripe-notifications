@@ -18,13 +18,13 @@ Stripe決済通知をSlackに送信するためのAWS CDK Constructライブラ�
 ## インストール
 
 ```bash
-npm install @your-org/stripe-notifications-construct
+npm install stripe-slack-notification
 ```
 
 または
 
 ```bash
-yarn add @your-org/stripe-notifications-construct
+yarn add stripe-slack-notification
 ```
 
 ## 使用方法
@@ -35,12 +35,12 @@ yarn add @your-org/stripe-notifications-construct
 
 ```typescript
 import * as cdk from 'aws-cdk-lib';
-import { StripeNotificationConstruct } from '@your-org/stripe-notifications-construct';
+import { StripeCheckoutHandler } from 'stripe-slack-notification';
 
 const app = new cdk.App();
 const stack = new cdk.Stack(app, 'MyStack');
 
-new StripeNotificationConstruct(stack, 'StripeNotification', {
+new StripeCheckoutHandler(stack, 'StripeNotification', {
   environment: 'production',
   snsTopicArn: 'arn:aws:sns:us-west-2:123456789:my-slack-topic',
   stripeSecretKeyFromSecretsManager: {
@@ -53,7 +53,7 @@ new StripeNotificationConstruct(stack, 'StripeNotification', {
 JSONシークレットから特定のキーを取得する場合：
 
 ```typescript
-new StripeNotificationConstruct(stack, 'StripeNotification', {
+new StripeCheckoutHandler(stack, 'StripeNotification', {
   environment: 'production',
   snsTopicArn: 'arn:aws:sns:us-west-2:123456789:my-slack-topic',
   stripeSecretKeyFromSecretsManager: {
@@ -69,7 +69,7 @@ new StripeNotificationConstruct(stack, 'StripeNotification', {
 コスト効率を重視する場合は、SSM Parameter Store（SecureString）を使用できます：
 
 ```typescript
-new StripeNotificationConstruct(stack, 'StripeNotification', {
+new StripeCheckoutHandler(stack, 'StripeNotification', {
   environment: 'production',
   snsTopicArn: 'arn:aws:sns:us-west-2:123456789:my-slack-topic',
   stripeSecretKeyFromSsmParameter: {
@@ -85,7 +85,7 @@ new StripeNotificationConstruct(stack, 'StripeNotification', {
 > テスト目的やローカル開発でのみ使用してください。
 
 ```typescript
-new StripeNotificationConstruct(stack, 'StripeNotification', {
+new StripeCheckoutHandler(stack, 'StripeNotification', {
   environment: 'development',
   snsTopicArn: 'arn:aws:sns:us-west-2:123456789:my-slack-topic',
   stripeSecretKey: process.env.STRIPE_SECRET_KEY!, // 非推奨
@@ -98,9 +98,9 @@ new StripeNotificationConstruct(stack, 'StripeNotification', {
 ```typescript
 import * as cdk from 'aws-cdk-lib';
 import * as logs from 'aws-cdk-lib/aws-logs';
-import { StripeNotificationConstruct } from '@your-org/stripe-notifications-construct';
+import { StripeCheckoutHandler } from 'stripe-slack-notification';
 
-new StripeNotificationConstruct(stack, 'StripeNotification', {
+new StripeCheckoutHandler(stack, 'StripeNotification', {
   environment: 'production',
   snsTopicArn: 'arn:aws:sns:us-west-2:123456789:my-slack-topic',
   stripeSecretKeyFromSecretsManager: {
@@ -204,10 +204,10 @@ aws secretsmanager create-secret \
 2. CDKコードで参照:
 
 ```typescript
-import { StripeNotificationConstruct } from '@your-org/stripe-notifications-construct';
+import { StripeCheckoutHandler } from 'stripe-slack-notification';
 
 // 文字列シークレットの場合
-new StripeNotificationConstruct(stack, 'StripeNotification', {
+new StripeCheckoutHandler(stack, 'StripeNotification', {
   environment: 'production',
   snsTopicArn: 'arn:aws:sns:us-west-2:123456789:my-slack-topic',
   stripeSecretKeyFromSecretsManager: {
@@ -217,7 +217,7 @@ new StripeNotificationConstruct(stack, 'StripeNotification', {
 });
 
 // JSONシークレットの場合
-new StripeNotificationConstruct(stack, 'StripeNotification', {
+new StripeCheckoutHandler(stack, 'StripeNotification', {
   environment: 'production',
   snsTopicArn: 'arn:aws:sns:us-west-2:123456789:my-slack-topic',
   stripeSecretKeyFromSecretsManager: {
@@ -252,7 +252,7 @@ aws ssm put-parameter \
 2. CDKコードで参照:
 
 ```typescript
-new StripeNotificationConstruct(stack, 'StripeNotification', {
+new StripeCheckoutHandler(stack, 'StripeNotification', {
   environment: 'production',
   snsTopicArn: 'arn:aws:sns:us-west-2:123456789:my-slack-topic',
   stripeSecretKeyFromSsmParameter: {
@@ -271,7 +271,7 @@ new StripeNotificationConstruct(stack, 'StripeNotification', {
 開発環境やテスト環境でのみ使用してください：
 
 ```typescript
-new StripeNotificationConstruct(stack, 'StripeNotification', {
+new StripeCheckoutHandler(stack, 'StripeNotification', {
   environment: 'development',
   snsTopicArn: 'arn:aws:sns:us-west-2:123456789:my-slack-topic',
   stripeSecretKey: process.env.STRIPE_SECRET_KEY!,
@@ -287,7 +287,7 @@ new StripeNotificationConstruct(stack, 'StripeNotification', {
 import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 
-const construct = new StripeNotificationConstruct(stack, 'StripeNotification', {
+const construct = new StripeCheckoutHandler(stack, 'StripeNotification', {
   // ... props
 });
 
@@ -306,7 +306,7 @@ rule.addTarget(new targets.LambdaFunction(construct.lambdaFunction));
 
 ## Props
 
-### StripeNotificationConstructProps
+### StripeCheckoutHandlerProps
 
 | プロパティ | 型 | 必須 | 説明 |
 |-----------|-----|------|------|
@@ -376,13 +376,13 @@ npm run watch
 ### 必須項目
 
 - [ ] **package.json**
-  - `"name"`: `"@your-org/stripe-notifications-construct"` → 実際の組織名/パッケージ名に変更
+  - `"name"`: `"stripe-slack-notification"` → 実際の組織名/パッケージ名に変更（必要に応じて）
   - `"author"`: `"Your Name"` → 実際の作成者名に変更
   - `"repository.url"`: GitHubリポジトリURLを実際のURLに変更
 
 - [ ] **README.md**
-  - インストールコマンドの`@your-org/stripe-notifications-construct`を実際のパッケージ名に変更
-  - すべてのコード例で使用している`@your-org/stripe-notifications-construct`を実際のパッケージ名に変更
+  - インストールコマンドの`stripe-slack-notification`を確認（必要に応じて変更）
+  - すべてのコード例で使用している`stripe-slack-notification`を確認（必要に応じて変更）
   - GitHubリポジトリURL（`https://github.com/hideokamoto/lambda-stripe-notifications`）を実際のURLに変更
 
 ### 公開手順

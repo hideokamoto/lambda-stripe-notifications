@@ -1,5 +1,5 @@
 {
-  "name": "@your-org/stripe-notifications-construct",
+  "name": "stripe-slack-notification",
   "version": "0.1.0",
   "description": "AWS CDK Construct for Stripe payment notifications via Slack using EventBridge and AWS Chatbot",
   "main": "lib/index.js",
