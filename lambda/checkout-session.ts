@@ -4,7 +4,7 @@ import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 import { SSMClient, GetParameterCommand } from "@aws-sdk/client-ssm";
 
-// AWS SDKクライアントをモジュールスコープで初期化（Lambda実行間で再利用）
+// Initialize AWS SDK clients at module scope (reused across Lambda invocations)
 const region = process.env.AWS_REGION || "us-east-1";
 const secretsManagerClient = new SecretsManagerClient({ region });
 const ssmClient = new SSMClient({ region });
@@ -50,7 +50,7 @@ interface NotificationMessages {
 }
 
 /**
- * 環境変数の設定に応じてStripe Secret Keyを取得する
+ * Retrieves Stripe Secret Key based on environment variable configuration
  * @returns Stripe Secret Key
  */
 async function getStripeSecretKey(): Promise<string> {
@@ -60,7 +60,7 @@ async function getStripeSecretKey(): Promise<string> {
     throw new Error("STRIPE_SECRET_SOURCE environment variable is not set");
   }
 
-  // 環境変数から直接取得（非推奨）
+  // Retrieve directly from environment variable (not recommended)
   if (secretSource === "env") {
     const secretKey = process.env.STRIPE_SECRET_KEY;
     if (!secretKey) {
@@ -69,7 +69,7 @@ async function getStripeSecretKey(): Promise<string> {
     return secretKey;
   }
 
-  // Secrets Managerから取得
+  // Retrieve from Secrets Manager
   if (secretSource === "secretsmanager") {
     const secretArn = process.env.STRIPE_SECRET_ARN;
     if (!secretArn) {
@@ -87,7 +87,7 @@ async function getStripeSecretKey(): Promise<string> {
         throw new Error("Secret value is empty");
       }
 
-      // JSONキーが指定されている場合は、そのキーの値を取得
+      // If JSON key is specified, retrieve the value for that key
       const secretKey = process.env.STRIPE_SECRET_JSON_KEY;
       if (secretKey) {
         const secretObject = JSON.parse(response.SecretString);
@@ -97,7 +97,7 @@ async function getStripeSecretKey(): Promise<string> {
         return secretObject[secretKey];
       }
 
-      // JSONキーが指定されていない場合は、シークレット全体を返す
+      // If JSON key is not specified, return the entire secret
       return response.SecretString;
     } catch (error) {
       console.error("Failed to retrieve secret from Secrets Manager:", error);
@@ -107,7 +107,7 @@ async function getStripeSecretKey(): Promise<string> {
     }
   }
 
-  // SSM Parameter Storeから取得
+  // Retrieve from SSM Parameter Store
   if (secretSource === "ssm") {
     const parameterName = process.env.STRIPE_SECRET_PARAMETER_NAME;
     if (!parameterName) {
@@ -137,27 +137,27 @@ async function getStripeSecretKey(): Promise<string> {
 }
 
 /**
- * 言語に応じた通知メッセージを取得する
+ * Gets notification messages based on language
  */
 function getNotificationMessages(language: NotificationLanguage): NotificationMessages {
-  if (language === "en") {
+  if (language === "ja") {
     return {
-      title: "New payment received",
-      accountMessage: "account",
+      title: "新しい決済が発生しました",
+      accountMessage: "アカウントにて決済が発生しました。",
       orderDetail: "*Order detail*",
-      dashboardLink: "View order in Dashboard",
+      dashboardLink: "で注文を確認する",
       eventType: "EventType:",
       sandboxId: "Sandbox ID:",
       liveAccount: "Live account",
     };
   }
 
-  // デフォルトは日本語
+  // Default is English
   return {
-    title: "新しい決済が発生しました",
-    accountMessage: "アカウントにて決済が発生しました。",
+    title: "New payment received",
+    accountMessage: "account",
     orderDetail: "*Order detail*",
-    dashboardLink: "で注文を確認する",
+    dashboardLink: "View order in Dashboard",
     eventType: "EventType:",
     sandboxId: "Sandbox ID:",
     liveAccount: "Live account",
@@ -171,37 +171,37 @@ const targetEventDetailTypes = [
 
 export const handler: EventBridgeHandler<EventDetailType, EventDetail, void> = async (event) => {
   try {
-    // イベントタイプのバリデーション
+    // Validate event type
     if (!targetEventDetailTypes.includes(event["detail-type"])) {
       console.log(`Skipping unsupported event type: ${event["detail-type"]}`);
       return;
     }
 
-    // 環境変数の検証
+    // Validate environment variables
     const requiredEnvVars = ["STRIPE_SECRET_SOURCE", "SNS_TOPIC_ARN", "STRIPE_ACCOUNT_NAME"];
     const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);
     if (missingEnvVars.length > 0) {
       throw new Error(`Missing required environment variables: ${missingEnvVars.join(", ")}`);
     }
 
-    // Stripe Secret Keyを取得
+    // Retrieve Stripe Secret Key
     const stripeSecretKey = await getStripeSecretKey();
 
     const isDevMode = process.env.APP_ENV !== "production";
-    const notificationLanguage = (process.env.NOTIFICATION_LANGUAGE || "ja") as NotificationLanguage;
+    const notificationLanguage = (process.env.NOTIFICATION_LANGUAGE || "en") as NotificationLanguage;
     const messages = getNotificationMessages(notificationLanguage);
     const stripe = new Stripe(stripeSecretKey);
     const checkoutSession = event.detail.data.object;
 
     const { id, payment_status: paymentStatus } = checkoutSession;
 
-    // 未払いの場合はスキップ
+    // Skip if unpaid
     if (paymentStatus === "unpaid") {
       console.log(`Skipping unpaid checkout session: ${id}`);
       return;
     }
 
-    // Stripe APIから詳細情報を取得
+    // Retrieve detailed information from Stripe API
     let lineItems;
     try {
       const response = await stripe.checkout.sessions.listLineItems(id, {
@@ -229,7 +229,7 @@ export const handler: EventBridgeHandler<EventDetailType, EventDetail, void> = a
       .filter(Boolean)
       .join("/");
 
-    // Slack通知メッセージの作成
+    // Create Slack notification message
     const slackNotificationMessage: AWSChatbotCustomMessage = {
       version: "1.0",
       source: "custom",
@@ -250,7 +250,7 @@ export const handler: EventBridgeHandler<EventDetailType, EventDetail, void> = a
               const productName =
                 product && typeof product !== "string" && !product.deleted
                   ? product.name
-                  : notificationLanguage === "en" ? "Unknown Product" : "不明な商品";
+                  : notificationLanguage === "ja" ? "不明な商品" : "Unknown Product";
               return [
                 `- Amount total: ${item.amount_total}`,
                 `- Amount subtotal: ${item.amount_subtotal}`,
@@ -271,7 +271,7 @@ export const handler: EventBridgeHandler<EventDetailType, EventDetail, void> = a
       },
     };
 
-    // SNS経由でSlackに通知
+    // Send notification to Slack via SNS
     const snsTopicArn = process.env.SNS_TOPIC_ARN as string;
 
     try {
@@ -290,7 +290,7 @@ export const handler: EventBridgeHandler<EventDetailType, EventDetail, void> = a
     }
   } catch (error) {
     console.error("Error processing Stripe event:", error);
-    // エラーを再スローしてLambdaの実行を失敗させる（EventBridgeがリトライする）
+    // Re-throw error to fail Lambda execution (EventBridge will retry)
     throw error;
   }
 };
