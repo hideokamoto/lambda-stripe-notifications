@@ -76,3 +76,4 @@
     "@aws-cdk/aws-lambda-nodejs:sdkV3ExcludeSmithyPackages": true
   }
 }
+
