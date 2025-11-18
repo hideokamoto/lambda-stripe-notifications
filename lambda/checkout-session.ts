@@ -216,7 +216,7 @@ export const handler: EventBridgeHandler<EventDetailType, EventDetail, void> = a
                     '*Order detail*',
                     lineItems.map(item => {
                         const product = item.price?.product;
-                        const productName = (product && typeof product !== 'string' && !('deleted' in product && product.deleted))
+                        const productName = (product && typeof product !== 'string' && !product.deleted)
                             ? product.name
                             : 'Unknown Product';
                         return [

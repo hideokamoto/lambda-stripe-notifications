@@ -135,13 +135,19 @@ export class StripeNotificationConstruct extends Construct {
     }
 
     this.lambdaFunction = new aws_lambda_nodejs.NodejsFunction(this, 'Handler', {
-      runtime: cdk.aws_lambda.Runtime.NODEJS_20_X,
+      // 利用者による上書きを許可するデフォルト値
       timeout: cdk.Duration.seconds(30),
       ...props.lambdaOptions,
-      // 重要なプロパティは上書きされないように最後に配置
+      // Constructが固定する必須プロパティ
       entry: join(__dirname, '../lambda/checkout-session.ts'),
       handler: 'handler',
-      environment,
+      runtime: cdk.aws_lambda.Runtime.NODEJS_20_X,
+      environment: {
+        // 利用者による環境変数の追加を許可
+        ...props.lambdaOptions?.environment,
+        // Constructが設定する必須の環境変数（上書き不可）
+        ...environment,
+      },
     });
 
     // SNS権限を追加
