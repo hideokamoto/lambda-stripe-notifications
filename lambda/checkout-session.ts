@@ -37,6 +37,18 @@ type AWSChatbotCustomMessage = {
   };
 };
 
+type NotificationLanguage = "ja" | "en";
+
+interface NotificationMessages {
+  title: string;
+  accountMessage: string;
+  orderDetail: string;
+  dashboardLink: string;
+  eventType: string;
+  sandboxId: string;
+  liveAccount: string;
+}
+
 /**
  * 環境変数の設定に応じてStripe Secret Keyを取得する
  * @returns Stripe Secret Key
@@ -124,6 +136,34 @@ async function getStripeSecretKey(): Promise<string> {
   throw new Error(`Invalid STRIPE_SECRET_SOURCE: ${secretSource}`);
 }
 
+/**
+ * 言語に応じた通知メッセージを取得する
+ */
+function getNotificationMessages(language: NotificationLanguage): NotificationMessages {
+  if (language === "en") {
+    return {
+      title: "New payment received",
+      accountMessage: "account",
+      orderDetail: "*Order detail*",
+      dashboardLink: "View order in Dashboard",
+      eventType: "EventType:",
+      sandboxId: "Sandbox ID:",
+      liveAccount: "Live account",
+    };
+  }
+
+  // デフォルトは日本語
+  return {
+    title: "新しい決済が発生しました",
+    accountMessage: "アカウントにて決済が発生しました。",
+    orderDetail: "*Order detail*",
+    dashboardLink: "で注文を確認する",
+    eventType: "EventType:",
+    sandboxId: "Sandbox ID:",
+    liveAccount: "Live account",
+  };
+}
+
 const targetEventDetailTypes = [
   "checkout.session.async_payment_succeeded",
   "checkout.session.completed",
@@ -148,6 +188,8 @@ export const handler: EventBridgeHandler<EventDetailType, EventDetail, void> = a
     const stripeSecretKey = await getStripeSecretKey();
 
     const isDevMode = process.env.APP_ENV !== "production";
+    const notificationLanguage = (process.env.NOTIFICATION_LANGUAGE || "ja") as NotificationLanguage;
+    const messages = getNotificationMessages(notificationLanguage);
     const stripe = new Stripe(stripeSecretKey);
     const checkoutSession = event.detail.data.object;
 
@@ -193,20 +235,22 @@ export const handler: EventBridgeHandler<EventDetailType, EventDetail, void> = a
       source: "custom",
       content: {
         textType: "client-markdown",
-        title: `${isDevMode ? "[Test] " : ""}新しい決済が発生しました`,
+        title: `${isDevMode ? "[Test] " : ""}${messages.title}`,
         description: [
-          `${process.env.STRIPE_ACCOUNT_NAME}アカウントにて決済が発生しました。`,
+          notificationLanguage === "en"
+            ? `A payment has been received on the ${process.env.STRIPE_ACCOUNT_NAME} ${messages.accountMessage}.`
+            : `${process.env.STRIPE_ACCOUNT_NAME}${messages.accountMessage}`,
           `- *Checkout Session ID*: ${checkoutSession.id}`,
           `- *Payment Intent ID*: ${paymentIntentId}`,
           "",
-          "*Order detail*",
+          messages.orderDetail,
           lineItems
             .map((item) => {
               const product = item.price?.product;
               const productName =
                 product && typeof product !== "string" && !product.deleted
                   ? product.name
-                  : "Unknown Product";
+                  : notificationLanguage === "en" ? "Unknown Product" : "不明な商品";
               return [
                 `- Amount total: ${item.amount_total}`,
                 `- Amount subtotal: ${item.amount_subtotal}`,
@@ -217,10 +261,12 @@ export const handler: EventBridgeHandler<EventDetailType, EventDetail, void> = a
             })
             .join("\n"),
         ].join("\n"),
-        nextSteps: [`<${dashboardUrl}|Dashboard>で注文を確認する`],
+        nextSteps: [`<${dashboardUrl}|Dashboard>${messages.dashboardLink}`],
         keywords: [
-          `EventType: ${event["detail-type"]}`,
-          isDevMode ? `Sandbox ID: ${process.env.STRIPE_SANDBOX_ACCOUNT_ID}` : "Live account",
+          `${messages.eventType} ${event["detail-type"]}`,
+          isDevMode
+            ? `${messages.sandboxId} ${process.env.STRIPE_SANDBOX_ACCOUNT_ID}`
+            : messages.liveAccount,
         ],
       },
     };

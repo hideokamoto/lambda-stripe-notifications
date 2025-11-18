@@ -70,6 +70,12 @@ export interface StripeCheckoutHandlerProps {
   readonly stripeSandboxAccountId?: string;
 
   /**
+   * 通知メッセージの言語
+   * @default "ja"
+   */
+  readonly notificationLanguage?: "ja" | "en";
+
+  /**
    * Lambda関数の追加設定
    * @default - デフォルト設定を使用
    */
@@ -117,6 +123,7 @@ export class StripeCheckoutHandler extends Construct {
       SNS_TOPIC_ARN: props.snsTopicArn,
       STRIPE_ACCOUNT_NAME: props.stripeAccountName,
       STRIPE_SANDBOX_ACCOUNT_ID: props.stripeSandboxAccountId || "",
+      NOTIFICATION_LANGUAGE: props.notificationLanguage || "ja",
     };
 
     // シークレットキーの取得方法を設定

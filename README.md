@@ -7,6 +7,7 @@ Stripe決済通知をSlackに送信するためのAWS CDK Constructライブラ�
 - Stripe決済完了時に自動でSlack通知
 - AWS EventBridgeとの統合
 - テスト環境と本番環境の切り替え対応
+- 日本語・英語の通知メッセージに対応
 - TypeScript完全対応
 - カスタマイズ可能なLambda設定
 
@@ -47,6 +48,7 @@ new StripeCheckoutHandler(stack, 'StripeNotification', {
     secretArn: 'arn:aws:secretsmanager:us-west-2:123456789:secret:stripe/secret-key-abc123',
   },
   stripeAccountName: 'MyCompany',
+  notificationLanguage: 'ja', // または 'en' で英語メッセージ
 });
 ```
 
@@ -93,6 +95,34 @@ new StripeCheckoutHandler(stack, 'StripeNotification', {
 });
 ```
 
+### 通知メッセージの言語設定
+
+日本語（デフォルト）または英語の通知メッセージを選択できます：
+
+```typescript
+// 日本語メッセージ（デフォルト）
+new StripeCheckoutHandler(stack, 'StripeNotification', {
+  environment: 'production',
+  snsTopicArn: 'arn:aws:sns:us-west-2:123456789:my-slack-topic',
+  stripeSecretKeyFromSecretsManager: {
+    secretArn: 'arn:aws:secretsmanager:us-west-2:123456789:secret:stripe/secret-key-abc123',
+  },
+  stripeAccountName: 'MyCompany',
+  notificationLanguage: 'ja', // または省略可能（デフォルトは 'ja'）
+});
+
+// 英語メッセージ
+new StripeCheckoutHandler(stack, 'StripeNotification', {
+  environment: 'production',
+  snsTopicArn: 'arn:aws:sns:us-west-2:123456789:my-slack-topic',
+  stripeSecretKeyFromSecretsManager: {
+    secretArn: 'arn:aws:secretsmanager:us-west-2:123456789:secret:stripe/secret-key-abc123',
+  },
+  stripeAccountName: 'MyCompany',
+  notificationLanguage: 'en',
+});
+```
+
 ### Lambda関数のカスタマイズ
 
 ```typescript
@@ -107,6 +137,7 @@ new StripeCheckoutHandler(stack, 'StripeNotification', {
     secretArn: 'arn:aws:secretsmanager:us-west-2:123456789:secret:stripe/secret-key-abc123',
   },
   stripeAccountName: 'MyCompany',
+  notificationLanguage: 'en',
   lambdaOptions: {
     timeout: cdk.Duration.seconds(60),
     memorySize: 512,
@@ -317,6 +348,7 @@ rule.addTarget(new targets.LambdaFunction(construct.lambdaFunction));
 | `stripeSecretKeyFromSsmParameter` | `StripeSecretFromSsmParameter` | 🔒 | **推奨** SSM Parameter StoreからStripe Secret Keyを取得する設定 |
 | `stripeAccountName` | `string` | ✅ | Stripeアカウント名（通知メッセージに表示） |
 | `stripeSandboxAccountId` | `string` | ❌ | StripeサンドボックスアカウントID（テスト環境の場合） |
+| `notificationLanguage` | `"ja" \| "en"` | ❌ | 通知メッセージの言語（デフォルト: `"ja"`） |
 | `lambdaOptions` | `Partial<NodejsFunctionProps>` | ❌ | Lambda関数の追加設定 |
 
 **注意:** `stripeSecretKey`、`stripeSecretKeyFromSecretsManager`、`stripeSecretKeyFromSsmParameter`のいずれか1つを必ず指定してください。
@@ -344,6 +376,10 @@ Slackに送信される通知には以下の情報が含まれます：
 - Stripeダッシュボードへのリンク
 - イベントタイプ
 - 環境情報（テスト/本番）
+
+通知メッセージの言語は`notificationLanguage`プロパティで選択できます：
+- `"ja"`（デフォルト）: 日本語メッセージ
+- `"en"`: 英語メッセージ
 
 ## 開発
 
