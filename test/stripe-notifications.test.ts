@@ -1,8 +1,8 @@
 import * as cdk from "aws-cdk-lib";
 import { Template } from "aws-cdk-lib/assertions";
-import { StripeNotificationConstruct } from "../lib";
+import { StripeCheckoutHandler } from "../lib";
 
-describe("StripeNotificationConstruct", () => {
+describe("StripeCheckoutHandler", () => {
   let app: cdk.App;
   let stack: cdk.Stack;
 
@@ -13,7 +13,7 @@ describe("StripeNotificationConstruct", () => {
 
   test("Lambda関数が作成されること", () => {
     // WHEN
-    new StripeNotificationConstruct(stack, "TestConstruct", {
+    new StripeCheckoutHandler(stack, "TestConstruct", {
       environment: "test",
       snsTopicArn: "arn:aws:sns:us-west-2:123456789:test-topic",
       stripeSecretKey: "sk_test_123",
@@ -27,7 +27,7 @@ describe("StripeNotificationConstruct", () => {
 
   test("Lambda関数に正しい環境変数が設定されること", () => {
     // WHEN
-    new StripeNotificationConstruct(stack, "TestConstruct", {
+    new StripeCheckoutHandler(stack, "TestConstruct", {
       environment: "production",
       snsTopicArn: "arn:aws:sns:us-west-2:123456789:prod-topic",
       stripeSecretKey: "sk_live_456",
@@ -53,7 +53,7 @@ describe("StripeNotificationConstruct", () => {
   test("Lambda関数にSNS Publishの権限が付与されること", () => {
     // WHEN
     const snsTopicArn = "arn:aws:sns:us-west-2:123456789:test-topic";
-    new StripeNotificationConstruct(stack, "TestConstruct", {
+    new StripeCheckoutHandler(stack, "TestConstruct", {
       environment: "test",
       snsTopicArn,
       stripeSecretKey: "sk_test_123",
@@ -77,7 +77,7 @@ describe("StripeNotificationConstruct", () => {
 
   test("Lambda関数のランタイムがNode.js 20であること", () => {
     // WHEN
-    new StripeNotificationConstruct(stack, "TestConstruct", {
+    new StripeCheckoutHandler(stack, "TestConstruct", {
       environment: "test",
       snsTopicArn: "arn:aws:sns:us-west-2:123456789:test-topic",
       stripeSecretKey: "sk_test_123",
@@ -93,7 +93,7 @@ describe("StripeNotificationConstruct", () => {
 
   test("Lambda関数のタイムアウトが30秒であること", () => {
     // WHEN
-    new StripeNotificationConstruct(stack, "TestConstruct", {
+    new StripeCheckoutHandler(stack, "TestConstruct", {
       environment: "test",
       snsTopicArn: "arn:aws:sns:us-west-2:123456789:test-topic",
       stripeSecretKey: "sk_test_123",
@@ -109,7 +109,7 @@ describe("StripeNotificationConstruct", () => {
 
   test("lambdaOptionsでカスタム設定を上書きできること", () => {
     // WHEN
-    new StripeNotificationConstruct(stack, "TestConstruct", {
+    new StripeCheckoutHandler(stack, "TestConstruct", {
       environment: "test",
       snsTopicArn: "arn:aws:sns:us-west-2:123456789:test-topic",
       stripeSecretKey: "sk_test_123",
@@ -131,7 +131,7 @@ describe("StripeNotificationConstruct", () => {
   test("Secrets Managerを使用する場合、正しい環境変数とIAM権限が設定されること", () => {
     // WHEN
     const secretArn = "arn:aws:secretsmanager:us-west-2:123456789:secret:stripe-secret-abc123";
-    new StripeNotificationConstruct(stack, "TestConstruct", {
+    new StripeCheckoutHandler(stack, "TestConstruct", {
       environment: "production",
       snsTopicArn: "arn:aws:sns:us-west-2:123456789:test-topic",
       stripeSecretKeyFromSecretsManager: {
@@ -173,7 +173,7 @@ describe("StripeNotificationConstruct", () => {
   test("Secrets Manager (JSONキー指定)を使用する場合、正しい環境変数が設定されること", () => {
     // WHEN
     const secretArn = "arn:aws:secretsmanager:us-west-2:123456789:secret:stripe-secret-abc123";
-    new StripeNotificationConstruct(stack, "TestConstruct", {
+    new StripeCheckoutHandler(stack, "TestConstruct", {
       environment: "production",
       snsTopicArn: "arn:aws:sns:us-west-2:123456789:test-topic",
       stripeSecretKeyFromSecretsManager: {
@@ -199,7 +199,7 @@ describe("StripeNotificationConstruct", () => {
   test("SSM Parameter Storeを使用する場合、正しい環境変数とIAM権限が設定されること", () => {
     // WHEN
     const parameterName = "/stripe/secret-key";
-    new StripeNotificationConstruct(stack, "TestConstruct", {
+    new StripeCheckoutHandler(stack, "TestConstruct", {
       environment: "production",
       snsTopicArn: "arn:aws:sns:us-west-2:123456789:test-topic",
       stripeSecretKeyFromSsmParameter: {
@@ -240,7 +240,7 @@ describe("StripeNotificationConstruct", () => {
   test("シークレットキーが指定されていない場合、エラーをスローすること", () => {
     // WHEN & THEN
     expect(() => {
-      new StripeNotificationConstruct(stack, "TestConstruct", {
+      new StripeCheckoutHandler(stack, "TestConstruct", {
         environment: "production",
         snsTopicArn: "arn:aws:sns:us-west-2:123456789:test-topic",
         stripeAccountName: "TestAccount",
@@ -251,7 +251,7 @@ describe("StripeNotificationConstruct", () => {
   test("複数のシークレットキー設定が指定された場合、エラーをスローすること", () => {
     // WHEN & THEN
     expect(() => {
-      new StripeNotificationConstruct(stack, "TestConstruct", {
+      new StripeCheckoutHandler(stack, "TestConstruct", {
         environment: "production",
         snsTopicArn: "arn:aws:sns:us-west-2:123456789:test-topic",
         stripeSecretKey: "sk_test_123",

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import "source-map-support/register";
 import * as cdk from "aws-cdk-lib";
-import { StripeNotificationConstruct } from "../lib";
+import { StripeCheckoutHandler } from "../lib";
 
 const app = new cdk.App();
 
@@ -13,7 +13,7 @@ const stack = new cdk.Stack(app, "StripeNotificationStack", {
 });
 
 // Constructを直接使用する例
-new StripeNotificationConstruct(stack, "StripeNotification", {
+new StripeCheckoutHandler(stack, "StripeNotification", {
   environment: "production",
   snsTopicArn: "arn:aws:sns:us-west-2:123456789:my-slack-topic",
   stripeSecretKey: process.env.STRIPE_SECRET_KEY!,

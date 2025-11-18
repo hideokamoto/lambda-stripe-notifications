@@ -23,7 +23,7 @@ export interface StripeSecretFromSsmParameter {
   readonly parameterName: string;
 }
 
-export interface StripeNotificationConstructProps {
+export interface StripeCheckoutHandlerProps {
   /**
    * デプロイ環境 (development, production など)
    */
@@ -81,13 +81,13 @@ export interface StripeNotificationConstructProps {
  *
  * EventBridgeでStripeイベントを受け取り、AWS Chatbot経由でSlackに通知します。
  */
-export class StripeNotificationConstruct extends Construct {
+export class StripeCheckoutHandler extends Construct {
   /**
    * 作成されたLambda関数
    */
   public readonly lambdaFunction: aws_lambda_nodejs.NodejsFunction;
 
-  constructor(scope: Construct, id: string, props: StripeNotificationConstructProps) {
+  constructor(scope: Construct, id: string, props: StripeCheckoutHandlerProps) {
     super(scope, id);
 
     // シークレットキーの設定方法を検証
@@ -186,10 +186,10 @@ export class StripeNotificationConstruct extends Construct {
 }
 
 /**
- * @deprecated StripeNotificationConstructを使用してください
+ * @deprecated StripeCheckoutHandlerを使用してください
  */
 export class StripeNotificationsStack extends cdk.Stack {
-  public readonly notificationConstruct: StripeNotificationConstruct;
+  public readonly notificationConstruct: StripeCheckoutHandler;
 
   constructor(
     scope: Construct,
@@ -200,7 +200,7 @@ export class StripeNotificationsStack extends cdk.Stack {
   ) {
     super(scope, id, props);
 
-    this.notificationConstruct = new StripeNotificationConstruct(this, "StripeNotification", {
+    this.notificationConstruct = new StripeCheckoutHandler(this, "StripeNotification", {
       environment: props?.environment || "dev",
       snsTopicArn: process.env.SLACK_NOTIFICATION_SNS_ARN as string,
       stripeSecretKey: (props?.environment === "production"

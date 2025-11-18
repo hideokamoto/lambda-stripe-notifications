@@ -1,6 +1,6 @@
 export {
-  StripeNotificationConstruct,
-  StripeNotificationConstructProps,
+  StripeCheckoutHandler,
+  StripeCheckoutHandlerProps,
   StripeSecretFromSecretsManager,
   StripeSecretFromSsmParameter,
   StripeNotificationsStack,
