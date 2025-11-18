@@ -4,3 +4,33 @@
 # CDK asset staging directory
 .cdk.staging
 cdk.out
+
+# Examples and tests
+examples/
+test/
+*.test.ts
+*.spec.ts
+
+# Config files
+tsconfig.json
+jest.config.js
+.env
+.env.*
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node
+node_modules/
+coverage/
+
+# CDK
+cdk.json
+.npmignore
