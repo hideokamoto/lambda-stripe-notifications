@@ -439,6 +439,41 @@ Before publishing this library to npm, update the following items:
    npm publish --access public
    ```
 
+## Choosing Between Constructs
+
+This library (`lambda-stripe-notifications`) and `aws-simple-stripe-event-notifier` are both designed to handle Stripe events, but they serve different use cases:
+
+### When to Use `lambda-stripe-notifications`
+
+- **Stripe API integration**: You need to fetch additional details from Stripe API (e.g., retrieving full checkout session details, customer information)
+- **Slack notifications**: You specifically need formatted Slack notifications via AWS Chatbot with rich message formatting
+- **Complex processing**: You need to perform custom business logic, data transformation, or validation
+- **Checkout events**: You're primarily handling `checkout.session.completed` and `checkout.session.async_payment_succeeded` events
+- **Multi-language support**: You need built-in support for Japanese and English notification messages
+- **Stripe secret key management**: You need secure handling of Stripe API keys via Secrets Manager or SSM Parameter Store
+
+### When to Use `aws-simple-stripe-event-notifier`
+
+- **Simple event forwarding**: You need to forward Stripe events to SNS without additional processing
+- **No Lambda overhead**: You want to avoid Lambda execution costs and cold starts
+- **Custom message formatting**: You need full control over the SNS message format using EventBridge's message templating
+- **All event types**: You need to handle any Stripe event type with flexible filtering
+- **Direct integration**: You prefer EventBridge → SNS direct integration without intermediate processing
+- **Cost optimization**: You want to minimize AWS costs by avoiding Lambda execution
+
+### Comparison Summary
+
+| Feature | `lambda-stripe-notifications` | `aws-simple-stripe-event-notifier` |
+|---------|-------------------------------|-----------------------------------|
+| Architecture | EventBridge → Lambda → SNS | EventBridge → SNS |
+| Lambda Required | ✅ Yes | ❌ No |
+| Stripe API Calls | ✅ Yes | ❌ No |
+| Message Customization | ⚠️ Limited to predefined format | ✅ Full control via templates |
+| Event Types | ⚠️ Checkout events focused | ✅ All Stripe events |
+| Cost | 💰 Higher (Lambda execution) | 💰 Lower (no Lambda) |
+| Latency | ⚡ Higher (Lambda processing) | ⚡ Lower (direct) |
+| Use Case | Specialized Slack notifications | Generic event forwarding |
+
 ## License
 
 MIT

@@ -97,10 +97,10 @@ new StripeCheckoutHandler(stack, 'StripeNotification', {
 
 ### 通知メッセージの言語設定
 
-日本語（デフォルト）または英語の通知メッセージを選択できます：
+日本語または英語（デフォルト）の通知メッセージを選択できます：
 
 ```typescript
-// 日本語メッセージ（デフォルト）
+// 日本語メッセージ
 new StripeCheckoutHandler(stack, 'StripeNotification', {
   environment: 'production',
   snsTopicArn: 'arn:aws:sns:us-west-2:123456789:my-slack-topic',
@@ -108,10 +108,10 @@ new StripeCheckoutHandler(stack, 'StripeNotification', {
     secretArn: 'arn:aws:secretsmanager:us-west-2:123456789:secret:stripe/secret-key-abc123',
   },
   stripeAccountName: 'MyCompany',
-  notificationLanguage: 'ja', // または省略可能（デフォルトは 'ja'）
+  notificationLanguage: 'ja', // 日本語メッセージを使用
 });
 
-// 英語メッセージ
+// 英語メッセージ（デフォルト）
 new StripeCheckoutHandler(stack, 'StripeNotification', {
   environment: 'production',
   snsTopicArn: 'arn:aws:sns:us-west-2:123456789:my-slack-topic',
@@ -119,7 +119,7 @@ new StripeCheckoutHandler(stack, 'StripeNotification', {
     secretArn: 'arn:aws:secretsmanager:us-west-2:123456789:secret:stripe/secret-key-abc123',
   },
   stripeAccountName: 'MyCompany',
-  notificationLanguage: 'en',
+  notificationLanguage: 'en', // または省略可能（デフォルトは 'en'）
 });
 ```
 
@@ -348,7 +348,7 @@ rule.addTarget(new targets.LambdaFunction(construct.lambdaFunction));
 | `stripeSecretKeyFromSsmParameter` | `StripeSecretFromSsmParameter` | 🔒 | **推奨** SSM Parameter StoreからStripe Secret Keyを取得する設定 |
 | `stripeAccountName` | `string` | ✅ | Stripeアカウント名（通知メッセージに表示） |
 | `stripeSandboxAccountId` | `string` | ❌ | StripeサンドボックスアカウントID（テスト環境の場合） |
-| `notificationLanguage` | `"ja" \| "en"` | ❌ | 通知メッセージの言語（デフォルト: `"ja"`） |
+| `notificationLanguage` | `"ja" \| "en"` | ❌ | 通知メッセージの言語（デフォルト: `"en"`） |
 | `lambdaOptions` | `Partial<NodejsFunctionProps>` | ❌ | Lambda関数の追加設定 |
 
 **注意:** `stripeSecretKey`、`stripeSecretKeyFromSecretsManager`、`stripeSecretKeyFromSsmParameter`のいずれか1つを必ず指定してください。
@@ -378,8 +378,8 @@ Slackに送信される通知には以下の情報が含まれます：
 - 環境情報（テスト/本番）
 
 通知メッセージの言語は`notificationLanguage`プロパティで選択できます：
-- `"ja"`（デフォルト）: 日本語メッセージ
-- `"en"`: 英語メッセージ
+- `"en"`（デフォルト）: 英語メッセージ
+- `"ja"`: 日本語メッセージ
 
 ## 開発
 
@@ -438,6 +438,41 @@ npm run watch
    ```bash
    npm publish --access public
    ```
+
+## Constructの選択
+
+このライブラリ（`lambda-stripe-notifications`）と`aws-simple-stripe-event-notifier`は、どちらもStripeイベントを処理するために設計されていますが、異なるユースケースに対応しています：
+
+### `lambda-stripe-notifications`を使用する場合
+
+- **Stripe API統合**: Stripe APIから追加の詳細情報を取得する必要がある場合（例：チェックアウトセッションの詳細情報、顧客情報の取得）
+- **Slack通知**: AWS Chatbot経由でフォーマットされたSlack通知を特に必要とする場合（リッチなメッセージフォーマット）
+- **複雑な処理**: カスタムビジネスロジック、データ変換、またはバリデーションを実行する必要がある場合
+- **Checkoutイベント**: 主に`checkout.session.completed`と`checkout.session.async_payment_succeeded`イベントを処理する場合
+- **多言語サポート**: 日本語と英語の通知メッセージの組み込みサポートが必要な場合
+- **Stripeシークレットキー管理**: Secrets ManagerまたはSSM Parameter Store経由でStripe APIキーを安全に処理する必要がある場合
+
+### `aws-simple-stripe-event-notifier`を使用する場合
+
+- **シンプルなイベント転送**: 追加の処理なしでStripeイベントをSNSに転送する必要がある場合
+- **Lambdaオーバーヘッドなし**: Lambda実行コストとコールドスタートを避けたい場合
+- **カスタムメッセージフォーマット**: EventBridgeのメッセージテンプレートを使用してSNSメッセージフォーマットを完全に制御する必要がある場合
+- **すべてのイベントタイプ**: 柔軟なフィルタリングで任意のStripeイベントタイプを処理する必要がある場合
+- **直接統合**: 中間処理なしでEventBridge → SNSの直接統合を好む場合
+- **コスト最適化**: Lambda実行を避けることでAWSコストを最小化したい場合
+
+### 比較サマリー
+
+| 機能 | `lambda-stripe-notifications` | `aws-simple-stripe-event-notifier` |
+|---------|-------------------------------|-----------------------------------|
+| アーキテクチャ | EventBridge → Lambda → SNS | EventBridge → SNS |
+| Lambda必須 | ✅ はい | ❌ いいえ |
+| Stripe API呼び出し | ✅ はい | ❌ いいえ |
+| メッセージカスタマイズ | ⚠️ 事前定義されたフォーマットに限定 | ✅ テンプレートによる完全な制御 |
+| イベントタイプ | ⚠️ Checkoutイベントに焦点 | ✅ すべてのStripeイベント |
+| コスト | 💰 高い（Lambda実行） | 💰 低い（Lambdaなし） |
+| レイテンシ | ⚡ 高い（Lambda処理） | ⚡ 低い（直接） |
+| ユースケース | 専用のSlack通知 | 汎用的なイベント転送 |
 
 ## ライセンス
 
