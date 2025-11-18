@@ -383,7 +383,7 @@ npm run watch
 - [ ] **README.md**
   - インストールコマンドの`@your-org/stripe-notifications-construct`を実際のパッケージ名に変更
   - すべてのコード例で使用している`@your-org/stripe-notifications-construct`を実際のパッケージ名に変更
-  - GitHubリポジトリURL（`https://github.com/your-org/lambda-stripe-notifications`）を実際のURLに変更
+  - GitHubリポジトリURL（`https://github.com/hideokamoto/lambda-stripe-notifications`）を実際のURLに変更
 
 ### 公開手順
 
@@ -409,7 +409,7 @@ MIT
 
 ## サポート
 
-問題が発生した場合は、[GitHub Issues](https://github.com/your-org/lambda-stripe-notifications/issues)で報告してください。
+問題が発生した場合は、[GitHub Issues](https://github.com/hideokamoto/lambda-stripe-notifications/issues)で報告してください。
 
 ## 貢献
 
