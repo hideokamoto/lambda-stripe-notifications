@@ -1,96 +1,102 @@
-import * as cdk from 'aws-cdk-lib';
-import { Construct } from 'constructs';
-import { aws_lambda_nodejs, aws_iam } from 'aws-cdk-lib';
-import { join } from 'path'
+import * as cdk from "aws-cdk-lib";
+import { Construct } from "constructs";
+import { aws_lambda_nodejs, aws_iam } from "aws-cdk-lib";
+import { join } from "path";
 
 export interface StripeSecretFromSecretsManager {
   /**
-   * Secrets ManagerのシークレットARNまたは名前
+   * Secret ARN or name in Secrets Manager
    */
   readonly secretArn: string;
 
   /**
-   * シークレット内のJSONキー（JSONシークレットの場合）
-   * @default - シークレット全体を文字列として使用
+   * JSON key in the secret (for JSON secrets)
+   * @default - Use the entire secret as a string
    */
   readonly secretKey?: string;
 }
 
 export interface StripeSecretFromSsmParameter {
   /**
-   * SSM Parameter Storeのパラメータ名
+   * Parameter name in SSM Parameter Store
    */
   readonly parameterName: string;
 }
 
-export interface StripeNotificationConstructProps {
+export interface StripeCheckoutHandlerProps {
   /**
-   * デプロイ環境 (development, production など)
+   * Deployment environment (e.g., development, production)
    */
   readonly environment: string;
 
   /**
-   * Slack通知を送信するSNS TopicのARN
+   * ARN of the SNS Topic for sending Slack notifications
    */
   readonly snsTopicArn: string;
 
   /**
-   * StripeのSecret Key (本番環境用またはテスト用)
+   * Stripe Secret Key (for production or test environment)
    *
-   * @deprecated セキュリティ上の理由から、stripeSecretKeyFromSecretsManagerまたは
-   * stripeSecretKeyFromSsmParameterの使用を推奨します
+   * @deprecated For security reasons, use stripeSecretKeyFromSecretsManager or
+   * stripeSecretKeyFromSsmParameter instead
    */
   readonly stripeSecretKey?: string;
 
   /**
-   * AWS Secrets ManagerからStripe Secret Keyを取得する設定
+   * Configuration to retrieve Stripe Secret Key from AWS Secrets Manager
    *
-   * stripeSecretKey、stripeSecretKeyFromSecretsManager、stripeSecretKeyFromSsmParameterの
-   * いずれか1つのみを指定してください
+   * Specify only one of stripeSecretKey, stripeSecretKeyFromSecretsManager, or
+   * stripeSecretKeyFromSsmParameter
    */
   readonly stripeSecretKeyFromSecretsManager?: StripeSecretFromSecretsManager;
 
   /**
-   * SSM Parameter StoreからStripe Secret Keyを取得する設定
+   * Configuration to retrieve Stripe Secret Key from SSM Parameter Store
    *
-   * stripeSecretKey、stripeSecretKeyFromSecretsManager、stripeSecretKeyFromSsmParameterの
-   * いずれか1つのみを指定してください
+   * Specify only one of stripeSecretKey, stripeSecretKeyFromSecretsManager, or
+   * stripeSecretKeyFromSsmParameter
    */
   readonly stripeSecretKeyFromSsmParameter?: StripeSecretFromSsmParameter;
 
   /**
-   * Stripeアカウント名（通知メッセージに表示）
+   * Stripe account name (displayed in notification messages)
    */
   readonly stripeAccountName: string;
 
   /**
-   * StripeサンドボックスアカウントID（テスト環境の場合）
-   * @default - 未設定
+   * Stripe sandbox account ID (for test environments)
+   * @default - Not set
    */
   readonly stripeSandboxAccountId?: string;
 
   /**
-   * Lambda関数の追加設定
-   * @default - デフォルト設定を使用
+   * Notification message language
+   * @default "en"
+   */
+  readonly notificationLanguage?: "ja" | "en";
+
+  /**
+   * Additional Lambda function settings
+   * @default - Use default settings
    */
   readonly lambdaOptions?: Partial<aws_lambda_nodejs.NodejsFunctionProps>;
 }
 
 /**
- * Stripe決済通知をSlackに送信するためのConstruct
+ * Construct for sending Stripe payment notifications to Slack
  *
- * EventBridgeでStripeイベントを受け取り、AWS Chatbot経由でSlackに通知します。
+ * Receives Stripe events via EventBridge and sends notifications to Slack via AWS Chatbot.
  */
-export class StripeNotificationConstruct extends Construct {
+export class StripeCheckoutHandler extends Construct {
   /**
-   * 作成されたLambda関数
+   * Created Lambda function
    */
   public readonly lambdaFunction: aws_lambda_nodejs.NodejsFunction;
 
-  constructor(scope: Construct, id: string, props: StripeNotificationConstructProps) {
+  constructor(scope: Construct, id: string, props: StripeCheckoutHandlerProps) {
     super(scope, id);
 
-    // シークレットキーの設定方法を検証
+    // Validate secret key configuration method
     const secretKeyOptions = [
       props.stripeSecretKey,
       props.stripeSecretKeyFromSecretsManager,
@@ -99,100 +105,112 @@ export class StripeNotificationConstruct extends Construct {
 
     if (secretKeyOptions.length === 0) {
       throw new Error(
-        'stripeSecretKey、stripeSecretKeyFromSecretsManager、または' +
-        'stripeSecretKeyFromSsmParameterのいずれか1つを指定してください'
+        "Please specify one of stripeSecretKey, stripeSecretKeyFromSecretsManager, or " +
+          "stripeSecretKeyFromSsmParameter",
       );
     }
 
     if (secretKeyOptions.length > 1) {
       throw new Error(
-        'stripeSecretKey、stripeSecretKeyFromSecretsManager、' +
-        'stripeSecretKeyFromSsmParameterは同時に指定できません。いずれか1つを選択してください'
+        "Cannot specify stripeSecretKey, stripeSecretKeyFromSecretsManager, and " +
+          "stripeSecretKeyFromSsmParameter at the same time. Please choose one.",
       );
     }
 
-    // 環境変数の設定
+    // Set environment variables
     const environment: { [key: string]: string } = {
       APP_ENV: props.environment,
       SNS_TOPIC_ARN: props.snsTopicArn,
       STRIPE_ACCOUNT_NAME: props.stripeAccountName,
-      STRIPE_SANDBOX_ACCOUNT_ID: props.stripeSandboxAccountId || '',
+      STRIPE_SANDBOX_ACCOUNT_ID: props.stripeSandboxAccountId || "",
+      NOTIFICATION_LANGUAGE: props.notificationLanguage || "en",
     };
 
-    // シークレットキーの取得方法を設定
+    // Set secret key retrieval method
     if (props.stripeSecretKey) {
       environment.STRIPE_SECRET_KEY = props.stripeSecretKey;
-      environment.STRIPE_SECRET_SOURCE = 'env';
+      environment.STRIPE_SECRET_SOURCE = "env";
     } else if (props.stripeSecretKeyFromSecretsManager) {
-      environment.STRIPE_SECRET_SOURCE = 'secretsmanager';
+      environment.STRIPE_SECRET_SOURCE = "secretsmanager";
       environment.STRIPE_SECRET_ARN = props.stripeSecretKeyFromSecretsManager.secretArn;
       if (props.stripeSecretKeyFromSecretsManager.secretKey) {
         environment.STRIPE_SECRET_JSON_KEY = props.stripeSecretKeyFromSecretsManager.secretKey;
       }
     } else if (props.stripeSecretKeyFromSsmParameter) {
-      environment.STRIPE_SECRET_SOURCE = 'ssm';
-      environment.STRIPE_SECRET_PARAMETER_NAME = props.stripeSecretKeyFromSsmParameter.parameterName;
+      environment.STRIPE_SECRET_SOURCE = "ssm";
+      environment.STRIPE_SECRET_PARAMETER_NAME =
+        props.stripeSecretKeyFromSsmParameter.parameterName;
     }
 
-    this.lambdaFunction = new aws_lambda_nodejs.NodejsFunction(this, 'Handler', {
-      // 利用者による上書きを許可するデフォルト値
+    this.lambdaFunction = new aws_lambda_nodejs.NodejsFunction(this, "Handler", {
+      // Default values that can be overridden by users
       timeout: cdk.Duration.seconds(30),
       ...props.lambdaOptions,
-      // Constructが固定する必須プロパティ
-      entry: join(__dirname, '../lambda/checkout-session.ts'),
-      handler: 'handler',
+      // Required properties fixed by the Construct
+      entry: join(__dirname, "../lambda/checkout-session.ts"),
+      handler: "handler",
       runtime: cdk.aws_lambda.Runtime.NODEJS_20_X,
       environment: {
-        // 利用者による環境変数の追加を許可
+        // Allow users to add additional environment variables
         ...props.lambdaOptions?.environment,
-        // Constructが設定する必須の環境変数（上書き不可）
+        // Required environment variables set by the Construct (cannot be overridden)
         ...environment,
       },
     });
 
-    // SNS権限を追加
-    this.lambdaFunction.addToRolePolicy(new aws_iam.PolicyStatement({
-      actions: ['sns:Publish'],
-      resources: [props.snsTopicArn],
-    }));
+    // Add SNS permissions
+    this.lambdaFunction.addToRolePolicy(
+      new aws_iam.PolicyStatement({
+        actions: ["sns:Publish"],
+        resources: [props.snsTopicArn],
+      }),
+    );
 
-    // Secrets Manager権限を追加
+    // Add Secrets Manager permissions
     if (props.stripeSecretKeyFromSecretsManager) {
-      this.lambdaFunction.addToRolePolicy(new aws_iam.PolicyStatement({
-        actions: ['secretsmanager:GetSecretValue'],
-        resources: [props.stripeSecretKeyFromSecretsManager.secretArn],
-      }));
+      this.lambdaFunction.addToRolePolicy(
+        new aws_iam.PolicyStatement({
+          actions: ["secretsmanager:GetSecretValue"],
+          resources: [props.stripeSecretKeyFromSecretsManager.secretArn],
+        }),
+      );
     }
 
-    // SSM Parameter Store権限を追加
+    // Add SSM Parameter Store permissions
     if (props.stripeSecretKeyFromSsmParameter) {
-      // パラメータ名からARNを構築
+      // Build ARN from parameter name
       const stack = cdk.Stack.of(this);
-      const parameterArn = `arn:aws:ssm:${stack.region}:${stack.account}:parameter/${props.stripeSecretKeyFromSsmParameter.parameterName.replace(/^\//, '')}`;
+      const parameterArn = `arn:aws:ssm:${stack.region}:${stack.account}:parameter/${props.stripeSecretKeyFromSsmParameter.parameterName.replace(/^\//, "")}`;
 
-      this.lambdaFunction.addToRolePolicy(new aws_iam.PolicyStatement({
-        actions: ['ssm:GetParameter'],
-        resources: [parameterArn],
-      }));
+      this.lambdaFunction.addToRolePolicy(
+        new aws_iam.PolicyStatement({
+          actions: ["ssm:GetParameter"],
+          resources: [parameterArn],
+        }),
+      );
     }
   }
 }
 
 /**
- * @deprecated StripeNotificationConstructを使用してください
+ * @deprecated Please use StripeCheckoutHandler instead
  */
 export class StripeNotificationsStack extends cdk.Stack {
-  public readonly notificationConstruct: StripeNotificationConstruct;
+  public readonly notificationConstruct: StripeCheckoutHandler;
 
-  constructor(scope: Construct, id: string, props?: cdk.StackProps & {
-    environment: string
-  }) {
+  constructor(
+    scope: Construct,
+    id: string,
+    props?: cdk.StackProps & {
+      environment: string;
+    },
+  ) {
     super(scope, id, props);
 
-    this.notificationConstruct = new StripeNotificationConstruct(this, 'StripeNotification', {
-      environment: props?.environment || 'dev',
+    this.notificationConstruct = new StripeCheckoutHandler(this, "StripeNotification", {
+      environment: props?.environment || "dev",
       snsTopicArn: process.env.SLACK_NOTIFICATION_SNS_ARN as string,
-      stripeSecretKey: (props?.environment === 'production'
+      stripeSecretKey: (props?.environment === "production"
         ? process.env.STRIPE_LIVE_SECRET_KEY
         : process.env.STRIPE_TEST_SECRET_KEY) as string,
       stripeAccountName: process.env.STRIPE_ACCOUNT_NAME as string,

@@ -64,13 +64,13 @@ npm run deploy:prod
 import * as cdk from 'aws-cdk-lib';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
-import { StripeNotificationConstruct } from '@your-org/stripe-notifications-construct';
+import { StripeCheckoutHandler } from 'cdk-stripe-slack-notification';
 
 const app = new cdk.App();
 const stack = new cdk.Stack(app, 'StripeStack');
 
 // Constructを作成（Secrets Manager使用）
-const notification = new StripeNotificationConstruct(stack, 'Notification', {
+const notification = new StripeCheckoutHandler(stack, 'Notification', {
   environment: 'production',
   snsTopicArn: process.env.SNS_TOPIC_ARN!,
   stripeSecretKeyFromSecretsManager: {
@@ -102,7 +102,7 @@ app.synth();
 
 ```typescript
 import * as cdk from 'aws-cdk-lib';
-import { StripeNotificationConstruct } from '@your-org/stripe-notifications-construct';
+import { StripeCheckoutHandler } from 'cdk-stripe-slack-notification';
 
 const app = new cdk.App();
 
@@ -112,7 +112,7 @@ const devStack = new cdk.Stack(app, 'StripeNotificationDev', {
   tags: { Environment: 'development' },
 });
 
-new StripeNotificationConstruct(devStack, 'Notification', {
+new StripeCheckoutHandler(devStack, 'Notification', {
   environment: 'development',
   snsTopicArn: process.env.SNS_TOPIC_ARN_DEV!,
   stripeSecretKeyFromSsmParameter: {
@@ -128,7 +128,7 @@ const prodStack = new cdk.Stack(app, 'StripeNotificationProd', {
   tags: { Environment: 'production' },
 });
 
-new StripeNotificationConstruct(prodStack, 'Notification', {
+new StripeCheckoutHandler(prodStack, 'Notification', {
   environment: 'production',
   snsTopicArn: process.env.SNS_TOPIC_ARN_PROD!,
   stripeSecretKeyFromSecretsManager: {
@@ -147,12 +147,12 @@ app.synth();
 ```typescript
 import * as cdk from 'aws-cdk-lib';
 import * as logs from 'aws-cdk-lib/aws-logs';
-import { StripeNotificationConstruct } from '@your-org/stripe-notifications-construct';
+import { StripeCheckoutHandler } from 'cdk-stripe-slack-notification';
 
 const app = new cdk.App();
 const stack = new cdk.Stack(app, 'StripeStack');
 
-new StripeNotificationConstruct(stack, 'Notification', {
+new StripeCheckoutHandler(stack, 'Notification', {
   environment: 'production',
   snsTopicArn: process.env.SNS_TOPIC_ARN!,
   stripeSecretKeyFromSecretsManager: {
