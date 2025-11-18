@@ -4,6 +4,12 @@ import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 import { SSMClient, GetParameterCommand } from "@aws-sdk/client-ssm";
 
+// AWS SDKクライアントをモジュールスコープで初期化（Lambda実行間で再利用）
+const region = process.env.AWS_REGION || 'us-east-1';
+const secretsManagerClient = new SecretsManagerClient({ region });
+const ssmClient = new SSMClient({ region });
+const snsClient = new SNSClient({ region });
+
 type EventDetailType = 'checkout.session.async_payment_succeeded' | 'checkout.session.completed';
 type EventDetail = Stripe.CheckoutSessionAsyncPaymentSucceededEvent | Stripe.CheckoutSessionCompletedEvent;
 
@@ -28,29 +34,6 @@ type AWSChatbotCustomMessage = {
       };
     };
   };
-
-/**
- * AWS ARNからリージョンを抽出する関数
- * @param arn AWS リソースのARN
- * @returns リージョン文字列、ARNが無効な場合はnull
- */
-function getRegionFromArn(arn: string): string | null {
-    const arnParts = arn.split(':');
-
-    if (arnParts.length < 6) {
-      console.error('Invalid ARN format');
-      return null;
-    }
-
-    const region = arnParts[3];
-
-    if (region === '') {
-      console.error('Region not found in ARN');
-      return null;
-    }
-
-    return region;
-  }
 
 /**
  * 環境変数の設定に応じてStripe Secret Keyを取得する
@@ -79,11 +62,8 @@ async function getStripeSecretKey(): Promise<string> {
             throw new Error('STRIPE_SECRET_ARN environment variable is not set');
         }
 
-        const region = getRegionFromArn(secretArn) || process.env.AWS_REGION || 'us-east-1';
-        const client = new SecretsManagerClient({ region });
-
         try {
-            const response = await client.send(
+            const response = await secretsManagerClient.send(
                 new GetSecretValueCommand({
                     SecretId: secretArn,
                 })
@@ -118,11 +98,8 @@ async function getStripeSecretKey(): Promise<string> {
             throw new Error('STRIPE_SECRET_PARAMETER_NAME environment variable is not set');
         }
 
-        const region = process.env.AWS_REGION || 'us-east-1';
-        const client = new SSMClient({ region });
-
         try {
-            const response = await client.send(
+            const response = await ssmClient.send(
                 new GetParameterCommand({
                     Name: parameterName,
                     WithDecryption: true,
@@ -240,13 +217,6 @@ export const handler: EventBridgeHandler<EventDetailType, EventDetail, void> = a
 
         // SNS経由でSlackに通知
         const snsTopicArn = process.env.SNS_TOPIC_ARN as string;
-        const region = getRegionFromArn(snsTopicArn);
-
-        if (!region) {
-            throw new Error(`Invalid SNS Topic ARN: ${snsTopicArn}`);
-        }
-
-        const snsClient = new SNSClient({ region });
 
         try {
             await snsClient.send(

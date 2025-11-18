@@ -145,14 +145,14 @@ Slackへの通知を受け取るためにAWS Chatbotを設定してください�
 
 **本番環境:**
 ```bash
-export STRIPE_SECRET_KEY="sk_live_xxxxxxxxxxxxx"
+export STRIPE_SECRET_KEY="<your-stripe-live-secret-key>"
 export SNS_TOPIC_ARN="arn:aws:sns:us-west-2:123456789:your-slack-topic"
 export STRIPE_ACCOUNT_NAME="MyCompany"
 ```
 
 **開発環境:**
 ```bash
-export STRIPE_TEST_SECRET_KEY="sk_test_xxxxxxxxxxxxx"
+export STRIPE_TEST_SECRET_KEY="<your-stripe-test-secret-key>"
 export SNS_TOPIC_ARN="arn:aws:sns:us-west-2:123456789:your-slack-topic-dev"
 export STRIPE_ACCOUNT_NAME="MyCompany (Test)"
 export STRIPE_SANDBOX_ACCOUNT_ID="acct_xxxxxxxxxxxxx"
@@ -191,13 +191,13 @@ export STRIPE_SANDBOX_ACCOUNT_ID="acct_xxxxxxxxxxxxx"
 # 文字列として保存する場合
 aws secretsmanager create-secret \
   --name stripe/secret-key \
-  --secret-string "sk_live_xxxxxxxxxxxxx" \
+  --secret-string "<your-stripe-secret-key>" \
   --region us-west-2
 
 # JSONとして保存する場合（複数の値を管理）
 aws secretsmanager create-secret \
   --name app/secrets \
-  --secret-string '{"STRIPE_SECRET_KEY":"sk_live_xxxxxxxxxxxxx","OTHER_KEY":"value"}' \
+  --secret-string '{"STRIPE_SECRET_KEY":"<your-stripe-secret-key>","OTHER_KEY":"value"}' \
   --region us-west-2
 ```
 
@@ -244,7 +244,7 @@ new StripeNotificationConstruct(stack, 'StripeNotification', {
 ```bash
 aws ssm put-parameter \
   --name "/stripe/secret-key" \
-  --value "sk_live_xxxxxxxxxxxxx" \
+  --value "<your-stripe-secret-key>" \
   --type SecureString \
   --region us-west-2
 ```
