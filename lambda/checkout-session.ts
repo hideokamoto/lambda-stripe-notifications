@@ -202,7 +202,7 @@ export const handler: EventBridgeHandler<EventDetailType, EventDetail, void> = a
     }
 
     // Retrieve detailed information from Stripe API
-    let lineItems;
+    let lineItems: Stripe.LineItem[];
     try {
       const response = await stripe.checkout.sessions.listLineItems(id, {
         expand: ["data.price.product"],
