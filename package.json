@@ -8,6 +8,10 @@
     "type": "git",
     "url": "https://github.com/hideokamoto/lambda-stripe-notifications.git"
   },
+  "homepage": "https://github.com/hideokamoto/lambda-stripe-notifications#readme",
+  "bugs": {
+    "url": "https://github.com/hideokamoto/lambda-stripe-notifications/issues"
+  },
   "keywords": [
     "aws",
     "cdk",
@@ -19,7 +23,10 @@
     "eventbridge",
     "chatbot"
   ],
-  "author": "Your Name",
+  "author": {
+    "name": "Hidetaka Okamoto",
+    "url": "https://github.com/hideokamoto"
+  },
   "license": "MIT",
   "files": [
     "lib/**/*.js",
