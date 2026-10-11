@@ -20,3 +20,4 @@ Please prefix it with a [Conventional Commits](https://www.conventionalcommits.o
 
 - [ ] PR title follows Conventional Commits (see table above)
 - [ ] `pnpm run lint && pnpm run typecheck && pnpm run build && pnpm test` pass locally
+      (`lint` auto-fixes via `biome --write` — review the resulting diff before committing)
