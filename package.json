@@ -32,7 +32,7 @@
     "build": "tsc",
     "watch": "tsc -w",
     "typecheck": "tsc --noEmit",
-    "test": "jest",
+    "test": "NODE_OPTIONS=--max-old-space-size=1536 jest --runInBand",
     "format": "biome format --write .",
     "lint": "biome lint --write .",
     "check": "biome check --write .",
